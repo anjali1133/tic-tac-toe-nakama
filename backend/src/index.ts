@@ -357,21 +357,17 @@ function matchTerminate(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nk
 function findMatch(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     logger.info('Finding match for user: ' + ctx.userId);
     
-    // List existing matches
-    const matchList = nk.matchList(ctx, 10, true, MATCH_LABEL, undefined, undefined, undefined, undefined);
-    
-    // Look for a match with only 1 player
-    if (matchList.matches) {
-        for (const match of matchList.matches) {
-            if (match.size < 2) {
-                logger.info('Found existing match: ' + match.matchId);
-                return JSON.stringify({ matchId: match.matchId });
-            }
+    // List existing matches (JS nk.* APIs do not take ctx; context is on the module)
+    const listed = nk.matchList(10, true, MATCH_LABEL, undefined, undefined, undefined);
+
+    for (const match of listed || []) {
+        if (match.size < 2) {
+            logger.info('Found existing match: ' + match.matchId);
+            return JSON.stringify({ matchId: match.matchId });
         }
     }
 
-    // Create new match
-    const matchId = nk.matchCreate(ctx, MATCH_LABEL, {});
+    const matchId = nk.matchCreate(MATCH_LABEL, {});
     logger.info('Created new match: ' + matchId);
     
     return JSON.stringify({ matchId });
@@ -380,7 +376,7 @@ function findMatch(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunti
 // RPC: Get leaderboard
 function getLeaderboard(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     try {
-        const records = nk.leaderboardRecordsList(ctx, "tic_tac_toe_wins", undefined, 100, undefined, undefined);
+        const records = nk.leaderboardRecordsList("tic_tac_toe_wins", undefined, 100, undefined, undefined);
         
         const leaderboard = records.records ? records.records.map(record => ({
             userId: record.ownerId,
@@ -404,20 +400,21 @@ function updateStats(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrun
         
         // Update wins leaderboard
         if (result === 'win') {
-            nk.leaderboardRecordWrite(ctx, "tic_tac_toe_wins", ctx.userId, ctx.username, 1, 0, {});
+            nk.leaderboardRecordWrite("tic_tac_toe_wins", ctx.userId, ctx.username, 1, 0, {});
         }
         
         // Update games played storage
         let gamesData = { played: 0, wins: 0, losses: 0, draws: 0 };
         try {
-            const storageRead = nk.storageRead(ctx, [{
+            const storageRead = nk.storageRead([{
                 collection: "player_stats",
                 key: "games",
                 userId: ctx.userId
             }]);
-            
+
             if (storageRead.length > 0) {
-                gamesData = JSON.parse(storageRead[0].value);
+                const v = storageRead[0].value as unknown;
+                gamesData = typeof v === "string" ? JSON.parse(v) : (v as typeof gamesData);
             }
         } catch (e) {
             logger.info('No existing stats for user: ' + ctx.userId);
@@ -428,8 +425,8 @@ function updateStats(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrun
         else if (result === 'loss') gamesData.losses++;
         else if (result === 'draw') gamesData.draws++;
 
-        nk.storageWrite(ctx, [{
-            collection: "player_stats",
+        nk.storageWrite([{
+           collection: "player_stats",
             key: "games",
             userId: ctx.userId,
             value: JSON.stringify(gamesData),
@@ -447,8 +444,7 @@ function updateStats(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrun
 // Initialize leaderboards
 function initializeLeaderboards(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama) {
     try {
-        // resetSchedule must be a string for the JS→Go bridge (undefined becomes "expects string").
-        nk.leaderboardCreate(ctx, "tic_tac_toe_wins", false, "desc", "best", "", {});
+        nk.leaderboardCreate("tic_tac_toe_wins", false, "desc", "best", "", {});
         logger.info('Leaderboard created successfully');
     } catch (error) {
         logger.info('Leaderboard already exists or error creating: ' + (error as Error).message);
