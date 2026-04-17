@@ -44,6 +44,24 @@ until pg_isready -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_D
 done
 echo "Postgres is ready."
 
+echo "Building TypeScript runtime..."
+npm run build
+if [ ! -f "/nakama/build/index.js" ]; then
+    echo "ERROR: TypeScript build failed - index.js not found!"
+    echo "Contents of build directory:"
+    ls -la /nakama/build/ || echo "Build directory does not exist"
+    exit 1
+fi
+echo "TypeScript build completed successfully."
+
+echo "Running database migration..."
+/nakama/nakama migrate up --database.address "$DATABASE_URL"
+if [ $? -ne 0 ]; then
+    echo "ERROR: Database migration failed!"
+    exit 1
+fi
+echo "Database migration completed successfully."
+
 echo "Starting Nakama with configuration..."
 
 # Security keys — set these in Railway service variables.
