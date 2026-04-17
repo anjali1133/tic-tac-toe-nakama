@@ -8,7 +8,9 @@ logger:
 
 metrics:
   reporting_freq_sec: 60
-  prometheus_port: 9090
+  # Must stay 0 on Railway: $PORT can equal 9090; Prometheus binds :9090 and would
+  # collide with the client HTTP API on socket.port (same port → listener fatal).
+  prometheus_port: 0
 
 session:
   # encryption_key, refresh_encryption_key, and token_expiry_sec are injected

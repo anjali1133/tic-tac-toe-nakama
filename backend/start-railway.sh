@@ -4,6 +4,7 @@ set -e
 echo "========================================="
 echo "Starting Nakama Server on Railway"
 echo "========================================="
+echo "PORT (Railway public listener): ${PORT:-unset}"
 
 # Use Railway's internal DNS hostname for Postgres if POSTGRES_HOST is not set.
 # The hostname follows the pattern <ServiceName>.railway.internal — ensure the
@@ -108,6 +109,7 @@ exec /nakama/nakama \
     --config /nakama/data/nakama-config.yml \
     --name nakama1 \
     --database.address "$DATABASE_URL" \
+    --metrics.prometheus_port 0 \
     --logger.level INFO \
     --session.encryption_key "$NAKAMA_SESSION_ENCRYPTION_KEY" \
     --session.refresh_encryption_key "$NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY" \
