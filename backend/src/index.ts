@@ -35,9 +35,7 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     // Initialize leaderboards
     initializeLeaderboards(ctx, logger, nk);
 
-    // Nakama's JS runtime parses InitModule AST and requires string-literal keys here
-    // (identifier keys like matchInit: matchInit cause a nil deref in getMatchHookFnIdentifier).
-    const matchHandler = {
+    initializer.registerMatch(MATCH_LABEL, {
         "matchInit": matchInit,
         "matchJoinAttempt": matchJoinAttempt,
         "matchJoin": matchJoin,
@@ -45,8 +43,7 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
         "matchLoop": matchLoop,
         "matchSignal": matchSignal,
         "matchTerminate": matchTerminate,
-    };
-    initializer.registerMatch(MATCH_LABEL, matchHandler);
+    });
 
     // Register health check endpoint for Railway
     initializer.registerRpc("health", healthCheck);
