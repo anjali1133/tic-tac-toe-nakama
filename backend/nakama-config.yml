@@ -11,13 +11,13 @@ metrics:
   prometheus_port: 9090
 
 session:
-  encryption_key: "defaultencryptionkey"
+  encryption_key: "supersecretencryptionkey123456789abcdefghijklmnopqrstuvwxyz"
   token_expiry_sec: 7200
-  refresh_encryption_key: "defaultrefreshencryptionkey"
+  refresh_encryption_key: "supersecretrefreshkey123456789abcdefghijklmnopqrstuvwxyz"
   refresh_token_expiry_sec: 3600
 
 socket:
-  server_key: "defaultkey"
+  server_key: "supersecretserverkey12345"
   port: 7350
   address: "0.0.0.0"
   protocol: "tcp"
@@ -39,4 +39,4 @@ database:
 
 runtime:
   path: "/nakama/build"
-  http_key: "defaulthttpkey"
+  http_key: "supersecrethettpkey12345"
