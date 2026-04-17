@@ -6,37 +6,46 @@ echo "Starting Nakama Server on Railway"
 echo "========================================="
 echo "PORT (Railway public listener): ${PORT:-unset}"
 
-# Use Railway's internal DNS hostname for Postgres if POSTGRES_HOST is not set.
-# The hostname follows the pattern <ServiceName>.railway.internal — ensure the
-# Postgres service in your Railway project is named "Postgres" (capital P).
-POSTGRES_HOST="${POSTGRES_HOST:-Postgres.railway.internal}"
-POSTGRES_USER="${POSTGRES_USER:-postgres}"
-POSTGRES_DB="${POSTGRES_DB:-railway}"
-
-if [ -z "$POSTGRES_PASSWORD" ]; then
-    echo "ERROR: POSTGRES_PASSWORD environment variable is not set!"
-    echo "Please add POSTGRES_PASSWORD to the Nakama service variables in Railway."
-    exit 1
+# --- Database URL (Railway) -------------------------------------------------
+# Prefer DATABASE_PRIVATE_URL / DATABASE_URL from Railway when the Postgres
+# plugin is linked (correct host, SSL, and credentials). The default host
+# Postgres.railway.internal only works if your DB service is *named* Postgres;
+# otherwise pg_isready never succeeds and nothing ever binds $PORT → endless
+# "service unavailable" on /healthcheck.
+NAKAMA_DB_URL=""
+if [ -n "${DATABASE_PRIVATE_URL:-}" ]; then
+    NAKAMA_DB_URL="$DATABASE_PRIVATE_URL"
+    echo "Database:       using DATABASE_PRIVATE_URL (internal)"
+elif [ -n "${DATABASE_URL:-}" ]; then
+    NAKAMA_DB_URL="$DATABASE_URL"
+    echo "Database:       using DATABASE_URL"
+else
+    POSTGRES_HOST="${POSTGRES_HOST:-${PGHOST:-Postgres.railway.internal}}"
+    POSTGRES_PORT="${POSTGRES_PORT:-${PGPORT:-5432}}"
+    POSTGRES_USER="${POSTGRES_USER:-${PGUSER:-postgres}}"
+    POSTGRES_DB="${POSTGRES_DB:-${PGDATABASE:-railway}}"
+    if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+        echo "ERROR: No DATABASE_URL / DATABASE_PRIVATE_URL and no POSTGRES_PASSWORD."
+        echo "In Railway: link Postgres to this service, or set DATABASE_URL, or set POSTGRES_* variables."
+        exit 1
+    fi
+    NAKAMA_DB_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=prefer"
+    echo "Database host:  $POSTGRES_HOST:$POSTGRES_PORT"
+    echo "Database name:  $POSTGRES_DB"
+    echo "Database user:  $POSTGRES_USER"
+    echo "Database URL:   postgres://${POSTGRES_USER}:***@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=prefer"
 fi
 
-echo "Database Host:  $POSTGRES_HOST"
-echo "Database Name:  $POSTGRES_DB"
-echo "Database User:  $POSTGRES_USER"
-
-# Construct database URL (password intentionally omitted from log output)
-DATABASE_URL="postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?sslmode=prefer"
-echo "Database URL:   postgres://$POSTGRES_USER:***@$POSTGRES_HOST:5432/$POSTGRES_DB?sslmode=prefer"
-
 # Wait for Postgres to be reachable before starting Nakama.
-# Railway services may take a few seconds to become available after boot.
 echo "Waiting for Postgres to be ready..."
-MAX_RETRIES=30
+MAX_RETRIES=45
 RETRY_INTERVAL=2
 attempt=1
-until pg_isready -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB" > /dev/null 2>&1; do
+until pg_isready -d "$NAKAMA_DB_URL" -t 2; do
     if [ "$attempt" -ge "$MAX_RETRIES" ]; then
-        echo "ERROR: Postgres at $POSTGRES_HOST:5432 did not become ready after $((MAX_RETRIES * RETRY_INTERVAL)) seconds."
-        echo "Check that the Postgres service is running and that POSTGRES_HOST is correct."
+        echo "ERROR: Postgres did not become ready after $((MAX_RETRIES * RETRY_INTERVAL)) seconds."
+        echo "Fix: In Railway → Nakama service → Variables → add reference to Postgres DATABASE_URL"
+        echo "     (or set DATABASE_PRIVATE_URL / correct POSTGRES_HOST for your DB service name)."
         exit 1
     fi
     echo "  Attempt $attempt/$MAX_RETRIES — Postgres not ready yet, retrying in ${RETRY_INTERVAL}s..."
@@ -65,7 +74,7 @@ else
 fi
 
 echo "Running database migration..."
-/nakama/nakama migrate up --database.address "$DATABASE_URL"
+/nakama/nakama migrate up --database.address "$NAKAMA_DB_URL"
 if [ $? -ne 0 ]; then
     echo "ERROR: Database migration failed!"
     exit 1
@@ -108,8 +117,7 @@ echo "Console will listen on port: $CONSOLE_PORT (gRPC internal uses $GRPC_INTER
 exec /nakama/nakama \
     --config /nakama/data/nakama-config.yml \
     --name nakama1 \
-    --database.address "$DATABASE_URL" \
-    --metrics.prometheus_port 0 \
+    --database.address "$NAKAMA_DB_URL" \
     --logger.level INFO \
     --session.encryption_key "$NAKAMA_SESSION_ENCRYPTION_KEY" \
     --session.refresh_encryption_key "$NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY" \
@@ -121,6 +129,4 @@ exec /nakama/nakama \
     --console.password "$NAKAMA_CONSOLE_PASSWORD" \
     --console.signing_key "$NAKAMA_CONSOLE_SIGNING_KEY" \
     --console.port "$CONSOLE_PORT" \
-    --console.address "0.0.0.0" \
-    --socket.port "$RAILWAY_PORT" \
-    --socket.address "0.0.0.0"
+    --socket.port "$RAILWAY_PORT"

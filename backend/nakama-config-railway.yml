@@ -21,7 +21,8 @@ session:
 socket:
   # server_key is injected via CLI flags in start-railway.sh.
   port: 7350
-  address: "0.0.0.0"
+  # Omit address so Nakama defaults to "" + protocol "tcp" (IPv4+IPv6). A literal
+  # 0.0.0.0 is IPv4-only and can fail Railway healthchecks that probe IPv6.
   protocol: "tcp"
   max_message_size_bytes: 4096
   read_timeout_ms: 10000
@@ -35,7 +36,6 @@ socket:
 console:
   # username and password are injected via CLI flags in start-railway.sh.
   max_message_size_bytes: 4096
-  address: "0.0.0.0"
 
 # Client HTTP + WebSocket API: socket.port (overridden by start-railway.sh to Railway $PORT). Console is separate (7351).
 runtime:
