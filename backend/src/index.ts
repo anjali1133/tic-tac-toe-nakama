@@ -35,15 +35,16 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     // Initialize leaderboards
     initializeLeaderboards(ctx, logger, nk);
 
-    // Register match handler
+    // Nakama's JS runtime parses InitModule AST and requires string-literal keys here
+    // (identifier keys like matchInit: matchInit cause a nil deref in getMatchHookFnIdentifier).
     const matchHandler = {
-        matchInit: matchInit,
-        matchJoinAttempt: matchJoinAttempt,
-        matchJoin: matchJoin,
-        matchLeave: matchLeave,
-        matchLoop: matchLoop,
-        matchSignal: matchSignal,
-        matchTerminate: matchTerminate
+        "matchInit": matchInit,
+        "matchJoinAttempt": matchJoinAttempt,
+        "matchJoin": matchJoin,
+        "matchLeave": matchLeave,
+        "matchLoop": matchLoop,
+        "matchSignal": matchSignal,
+        "matchTerminate": matchTerminate,
     };
     initializer.registerMatch(MATCH_LABEL, matchHandler);
 
@@ -406,7 +407,7 @@ function updateStats(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrun
         
         // Update wins leaderboard
         if (result === 'win') {
-            nk.leaderboardRecordWrite(ctx, "tic_tac_toe_wins", ctx.userId, ctx.username, 1, undefined, undefined);
+            nk.leaderboardRecordWrite(ctx, "tic_tac_toe_wins", ctx.userId, ctx.username, 1, 0, {});
         }
         
         // Update games played storage
@@ -449,7 +450,8 @@ function updateStats(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrun
 // Initialize leaderboards
 function initializeLeaderboards(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama) {
     try {
-        nk.leaderboardCreate(ctx, "tic_tac_toe_wins", false, "desc", "best", undefined, {});
+        // resetSchedule must be a string for the JS→Go bridge (undefined becomes "expects string").
+        nk.leaderboardCreate(ctx, "tic_tac_toe_wins", false, "desc", "best", "", {});
         logger.info('Leaderboard created successfully');
     } catch (error) {
         logger.info('Leaderboard already exists or error creating: ' + (error as Error).message);
