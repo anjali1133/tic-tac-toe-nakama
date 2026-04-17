@@ -37,7 +37,7 @@ EXPOSE 7349 7350 7351
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:7349/v2/healthcheck || exit 1
+  CMD curl -f http://localhost:7350/healthcheck || exit 1
 
 # Start command with environment variables
 CMD ["sh", "-c", "nakama --name nakama1 --database.address postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?sslmode=prefer --logger.level INFO --session.token_expiry_sec 7200 --runtime.path /nakama/build"]

@@ -35,15 +35,16 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     // Initialize leaderboards
     initializeLeaderboards(ctx, logger, nk);
 
-    // Nakama matches registerMatch on the AST: literal module id + shorthand handler properties.
+    // Nakama's getMatchHookFnIdentifier assumes PropertyKeyed entries; ES shorthand becomes
+    // PropertyShort and panics on this server build. Use string-literal keys + global fn refs.
     initializer.registerMatch("tic-tac-toe", {
-        matchInit,
-        matchJoinAttempt,
-        matchJoin,
-        matchLeave,
-        matchLoop,
-        matchSignal,
-        matchTerminate,
+        "matchInit": matchInit,
+        "matchJoinAttempt": matchJoinAttempt,
+        "matchJoin": matchJoin,
+        "matchLeave": matchLeave,
+        "matchLoop": matchLoop,
+        "matchSignal": matchSignal,
+        "matchTerminate": matchTerminate,
     });
 
     // Railway probes /healthz; keep a separate RPC symbol from /health for Nakama's AST pass.
