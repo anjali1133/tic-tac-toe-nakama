@@ -60,7 +60,7 @@ echo "Security keys:    loaded from environment (values hidden)"
 
 # Start Nakama — security-sensitive values are passed as CLI flags so they are
 # read from the Railway environment at runtime and never baked into the image.
-exec nakama \
+exec /nakama/nakama \
     --config /nakama/data/nakama-config.yml \
     --name nakama1 \
     --database.address "$DATABASE_URL" \
