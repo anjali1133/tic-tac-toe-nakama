@@ -35,7 +35,7 @@ console:
   max_message_size_bytes: 4096
   address: "0.0.0.0"
 
-# Runtime HTTP configuration - HTTP API endpoints are served via console port
+# Client HTTP + WebSocket API: socket.port (overridden by start-railway.sh to Railway $PORT). Console is separate (7351).
 runtime:
   path: "/nakama/build"
   # http_key is injected via CLI flags in start-railway.sh.

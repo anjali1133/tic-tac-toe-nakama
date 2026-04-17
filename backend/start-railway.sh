@@ -68,13 +68,14 @@ echo "Database migration completed successfully."
 
 echo "Starting Nakama with configuration..."
 echo "Nakama executable: $(which nakama || echo '/nakama/nakama')"
-echo "Config file: /nakama/data/nakama-config-railway.yml"
+echo "Config file: /nakama/data/nakama-config.yml"
 
 # Security keys — set these in Railway service variables.
 # Defaults are provided only so the server starts; override them in production.
 NAKAMA_SESSION_ENCRYPTION_KEY="${NAKAMA_SESSION_ENCRYPTION_KEY:-changeme-session-key}"
 NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY="${NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY:-changeme-refresh-key}"
-NAKAMA_SERVER_KEY="${NAKAMA_SERVER_KEY:-changeme-server-key}"
+# Must match the game client (e.g. VITE_NAKAMA_SERVER_KEY on Vercel). Nakama's dev default is "defaultkey".
+NAKAMA_SERVER_KEY="${NAKAMA_SERVER_KEY:-defaultkey}"
 NAKAMA_RUNTIME_HTTP_KEY="${NAKAMA_RUNTIME_HTTP_KEY:-changeme-http-key}"
 NAKAMA_CONSOLE_USERNAME="${NAKAMA_CONSOLE_USERNAME:-admin}"
 NAKAMA_CONSOLE_PASSWORD="${NAKAMA_CONSOLE_PASSWORD:-changeme-console-password}"
@@ -82,15 +83,15 @@ NAKAMA_CONSOLE_PASSWORD="${NAKAMA_CONSOLE_PASSWORD:-changeme-console-password}"
 echo "Console username: $NAKAMA_CONSOLE_USERNAME"
 echo "Security keys:    loaded from environment (values hidden)"
 
-# Railway assigns a PORT environment variable that we need to use for HTTP API
-RAILWAY_PORT="${PORT:-7349}"
+# Railway assigns PORT for the public listener. Nakama 3 serves the client HTTP + WebSocket API on socket.port (default 7350).
+RAILWAY_PORT="${PORT:-7350}"
 echo "Railway assigned port: $RAILWAY_PORT"
-echo "HTTP API will run on port: $RAILWAY_PORT"
+echo "Client API (HTTP + realtime) will listen on port: $RAILWAY_PORT"
 
 # Start Nakama — security-sensitive values are passed as CLI flags so they are
 # read from the Railway environment at runtime and never baked into the image.
 exec /nakama/nakama \
-    --config /nakama/data/nakama-config-railway.yml \
+    --config /nakama/data/nakama-config.yml \
     --name nakama1 \
     --database.address "$DATABASE_URL" \
     --logger.level INFO \
@@ -102,7 +103,7 @@ exec /nakama/nakama \
     --runtime.path /nakama/build \
     --console.username "$NAKAMA_CONSOLE_USERNAME" \
     --console.password "$NAKAMA_CONSOLE_PASSWORD" \
-    --console.port "$RAILWAY_PORT" \
+    --console.port "7351" \
     --console.address "0.0.0.0" \
-    --socket.port "7350" \
+    --socket.port "$RAILWAY_PORT" \
     --socket.address "0.0.0.0"

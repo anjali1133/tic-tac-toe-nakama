@@ -1,6 +1,20 @@
 import { Client, Session, Socket } from '@heroiclabs/nakama-js';
 import { GameUpdateMessage, LeaderboardEntry, PlayerStats } from '../types/game';
 
+function parseRpcJson<T>(payload: string | object | undefined): T {
+  if (payload == null || payload === '') {
+    return {} as T;
+  }
+  if (typeof payload === 'string') {
+    return JSON.parse(payload) as T;
+  }
+  return payload as T;
+}
+
+function decodeMatchPayload(data: string | Uint8Array): string {
+  return typeof data === 'string' ? data : new TextDecoder().decode(data);
+}
+
 class NakamaService {
   private client: Client;
   private session: Session | null = null;
@@ -12,7 +26,8 @@ class NakamaService {
     const serverPort = import.meta.env.VITE_NAKAMA_SERVER_PORT || '7350';
     const useSSL = import.meta.env.VITE_NAKAMA_USE_SSL === 'true';
 
-    this.client = new Client('defaultkey', serverUrl, serverPort, useSSL, 30000, true);
+    const serverKey = import.meta.env.VITE_NAKAMA_SERVER_KEY || 'defaultkey';
+    this.client = new Client(serverKey, serverUrl, serverPort, useSSL, 30000, true);
   }
 
   async authenticate(username: string): Promise<Session> {
@@ -61,9 +76,13 @@ class NakamaService {
 
     try {
       const response = await this.client.rpc(this.session, 'find_match', {});
-      const data = JSON.parse(response.payload || '{}');
-      this.matchId = data.matchId;
-      return this.matchId;
+      const data = parseRpcJson<{ matchId?: string }>(response.payload);
+      const matchId = typeof data.matchId === 'string' ? data.matchId : null;
+      if (!matchId) {
+        throw new Error('find_match did not return a matchId');
+      }
+      this.matchId = matchId;
+      return matchId;
     } catch (error) {
       console.error('Error finding match:', error);
       throw error;
@@ -95,7 +114,7 @@ class NakamaService {
 
     this.socket.onmatchdata = (matchData) => {
       try {
-        const message = JSON.parse(matchData.data);
+        const message = JSON.parse(decodeMatchPayload(matchData.data)) as GameUpdateMessage;
         callback(message);
       } catch (error) {
         console.error('Error parsing match data:', error);
@@ -129,7 +148,8 @@ class NakamaService {
       });
 
       if (result.objects && result.objects.length > 0) {
-        return JSON.parse(result.objects[0].value);
+        const raw = result.objects[0].value;
+        return typeof raw === 'string' ? (JSON.parse(raw) as PlayerStats) : (raw as PlayerStats);
       }
 
       return { played: 0, wins: 0, losses: 0, draws: 0 };
@@ -146,8 +166,8 @@ class NakamaService {
 
     try {
       const response = await this.client.rpc(this.session, 'get_leaderboard', {});
-      const data = JSON.parse(response.payload || '{}');
-      return data.leaderboard || [];
+      const data = parseRpcJson<{ leaderboard?: LeaderboardEntry[] }>(response.payload);
+      return data.leaderboard ?? [];
     } catch (error) {
       console.error('Error getting leaderboard:', error);
       return [];
