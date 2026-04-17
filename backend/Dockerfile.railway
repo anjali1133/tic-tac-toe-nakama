@@ -1,16 +1,19 @@
 # Railway-specific Dockerfile for Nakama backend
 FROM heroiclabs/nakama:3.21.1
 
-# Install Node.js for TypeScript compilation
+# Stay as root user to avoid permission issues
 USER root
+
+# Install Node.js for TypeScript compilation
 RUN apt-get update && apt-get install -y \
     curl \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Set working directory and create necessary directories
 WORKDIR /nakama
+RUN mkdir -p /nakama/data /nakama/build
 
 # Copy package files and install dependencies
 COPY backend/package*.json ./
@@ -27,14 +30,11 @@ RUN npm run build
 # Copy Nakama configuration
 COPY backend/nakama-config.yml /nakama/data/
 
-# Switch back to nakama user
-USER nakama
-
 # Expose ports
 EXPOSE 7349 7350 7351
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:7349/v2/healthcheck || exit 1
 
 # Start command with environment variables
