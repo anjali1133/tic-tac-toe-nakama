@@ -44,19 +44,24 @@ until pg_isready -h "$POSTGRES_HOST" -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_D
 done
 echo "Postgres is ready."
 
-echo "Building TypeScript runtime..."
-npm run build
-if [ $? -ne 0 ]; then
-    echo "ERROR: npm run build failed!"
-    exit 1
-fi
+# Image build already runs `npm run build`; skip at runtime so the process
+# listens on $PORT sooner (Railway healthchecks target $PORT immediately).
 if [ ! -f "/nakama/build/index.js" ]; then
-    echo "ERROR: TypeScript build failed - index.js not found!"
-    echo "Contents of build directory:"
-    ls -la /nakama/build/ || echo "Build directory does not exist"
-    exit 1
+    echo "Building TypeScript runtime (no prebuilt index.js in image)..."
+    npm run build
+    if [ $? -ne 0 ]; then
+        echo "ERROR: npm run build failed!"
+        exit 1
+    fi
+    if [ ! -f "/nakama/build/index.js" ]; then
+        echo "ERROR: TypeScript build failed - index.js not found!"
+        ls -la /nakama/build/ || echo "Build directory does not exist"
+        exit 1
+    fi
+    echo "TypeScript build completed successfully."
+else
+    echo "Using prebuilt runtime at /nakama/build/index.js"
 fi
-echo "TypeScript build completed successfully."
 
 echo "Running database migration..."
 /nakama/nakama migrate up --database.address "$DATABASE_URL"
@@ -79,14 +84,23 @@ NAKAMA_SERVER_KEY="${NAKAMA_SERVER_KEY:-defaultkey}"
 NAKAMA_RUNTIME_HTTP_KEY="${NAKAMA_RUNTIME_HTTP_KEY:-changeme-http-key}"
 NAKAMA_CONSOLE_USERNAME="${NAKAMA_CONSOLE_USERNAME:-admin}"
 NAKAMA_CONSOLE_PASSWORD="${NAKAMA_CONSOLE_PASSWORD:-changeme-console-password}"
+NAKAMA_CONSOLE_SIGNING_KEY="${NAKAMA_CONSOLE_SIGNING_KEY:-defaultsigningkey}"
 
 echo "Console username: $NAKAMA_CONSOLE_USERNAME"
 echo "Security keys:    loaded from environment (values hidden)"
 
-# Railway assigns PORT for the public listener. Nakama 3 serves the client HTTP + WebSocket API on socket.port (default 7350).
+# Railway assigns PORT for the public listener. Nakama 3 HTTP + WS gateway uses socket.port;
+# internal gRPC listens on socket.port - 1. Console must not collide with either or startup fails
+# (Railway healthchecks then see "service unavailable" because nothing is listening on $PORT).
 RAILWAY_PORT="${PORT:-7350}"
+GRPC_INTERNAL_PORT=$((RAILWAY_PORT - 1))
+CONSOLE_PORT="${NAKAMA_CONSOLE_PORT:-7351}"
+while [ "$CONSOLE_PORT" -eq "$RAILWAY_PORT" ] || [ "$CONSOLE_PORT" -eq "$GRPC_INTERNAL_PORT" ]; do
+    CONSOLE_PORT=$((CONSOLE_PORT + 1))
+done
 echo "Railway assigned port: $RAILWAY_PORT"
 echo "Client API (HTTP + realtime) will listen on port: $RAILWAY_PORT"
+echo "Console will listen on port: $CONSOLE_PORT (gRPC internal uses $GRPC_INTERNAL_PORT)"
 
 # Start Nakama — security-sensitive values are passed as CLI flags so they are
 # read from the Railway environment at runtime and never baked into the image.
@@ -103,7 +117,8 @@ exec /nakama/nakama \
     --runtime.path /nakama/build \
     --console.username "$NAKAMA_CONSOLE_USERNAME" \
     --console.password "$NAKAMA_CONSOLE_PASSWORD" \
-    --console.port "7351" \
+    --console.signing_key "$NAKAMA_CONSOLE_SIGNING_KEY" \
+    --console.port "$CONSOLE_PORT" \
     --console.address "0.0.0.0" \
     --socket.port "$RAILWAY_PORT" \
     --socket.address "0.0.0.0"
