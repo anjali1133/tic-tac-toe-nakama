@@ -139,7 +139,13 @@ function matchLeave(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
             
             // End game if player leaves during active game
             if (gameState.gameStatus === 'playing') {
-                const remainingPlayer = Object.values(gameState.players).find(p => p.connected);
+                let remainingPlayer: Player | undefined;
+                for (const pid in gameState.players) {
+                    if (Object.prototype.hasOwnProperty.call(gameState.players, pid) && gameState.players[pid].connected) {
+                        remainingPlayer = gameState.players[pid];
+                        break;
+                    }
+                }
                 if (remainingPlayer) {
                     gameState.winner = remainingPlayer.symbol;
                     gameState.gameStatus = 'finished';
@@ -329,20 +335,6 @@ function matchTerminate(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nk
     return { state: state };
 }
 
-// Match hook map must be a top-level binding passed by identifier: Nakama's AST walker
-// (getMatchHookFnIdentifier) resolves it via DeclarationList; inline object literals here
-// can make extraction fail with "Failed to eval JavaScript modules" even when InitModule
-// partially runs. Property keys must be string literals (not shorthand).
-var ticTacToeMatchHandlers: { [key: string]: unknown } = {
-    "matchInit": matchInit,
-    "matchJoinAttempt": matchJoinAttempt,
-    "matchJoin": matchJoin,
-    "matchLeave": matchLeave,
-    "matchLoop": matchLoop,
-    "matchSignal": matchSignal,
-    "matchTerminate": matchTerminate,
-};
-
 // RPC: Find or create a match
 function findMatch(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     logger.info('Finding match for user: ' + ctx.userId);
@@ -446,7 +438,17 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
 
     initializeLeaderboards(ctx, logger, nk);
 
-    initializer.registerMatch("tic-tac-toe", ticTacToeMatchHandlers);
+    // Nakama's static extractor only accepts PropertyKeyed string keys (not ES shorthand).
+    // Inline object avoids DeclarationList lookup for the handler map identifier.
+    initializer.registerMatch("tic-tac-toe", {
+        "matchInit": matchInit,
+        "matchJoinAttempt": matchJoinAttempt,
+        "matchJoin": matchJoin,
+        "matchLeave": matchLeave,
+        "matchLoop": matchLoop,
+        "matchSignal": matchSignal,
+        "matchTerminate": matchTerminate,
+    });
 
     initializer.registerRpc("health", healthCheck);
     initializer.registerRpc("healthz", healthzCheck);
