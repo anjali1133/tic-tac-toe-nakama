@@ -46,11 +46,30 @@ echo "Postgres is ready."
 
 echo "Starting Nakama with configuration..."
 
-# Start Nakama with all necessary parameters
+# Security keys — set these in Railway service variables.
+# Defaults are provided only so the server starts; override them in production.
+NAKAMA_SESSION_ENCRYPTION_KEY="${NAKAMA_SESSION_ENCRYPTION_KEY:-changeme-session-key}"
+NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY="${NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY:-changeme-refresh-key}"
+NAKAMA_SERVER_KEY="${NAKAMA_SERVER_KEY:-changeme-server-key}"
+NAKAMA_RUNTIME_HTTP_KEY="${NAKAMA_RUNTIME_HTTP_KEY:-changeme-http-key}"
+NAKAMA_CONSOLE_USERNAME="${NAKAMA_CONSOLE_USERNAME:-admin}"
+NAKAMA_CONSOLE_PASSWORD="${NAKAMA_CONSOLE_PASSWORD:-changeme-console-password}"
+
+echo "Console username: $NAKAMA_CONSOLE_USERNAME"
+echo "Security keys:    loaded from environment (values hidden)"
+
+# Start Nakama — security-sensitive values are passed as CLI flags so they are
+# read from the Railway environment at runtime and never baked into the image.
 exec nakama \
     --config /nakama/data/nakama-config.yml \
     --name nakama1 \
     --database.address "$DATABASE_URL" \
     --logger.level INFO \
+    --session.encryption_key "$NAKAMA_SESSION_ENCRYPTION_KEY" \
+    --session.refresh_encryption_key "$NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY" \
     --session.token_expiry_sec 7200 \
-    --runtime.path /nakama/build
+    --socket.server_key "$NAKAMA_SERVER_KEY" \
+    --runtime.http_key "$NAKAMA_RUNTIME_HTTP_KEY" \
+    --runtime.path /nakama/build \
+    --console.username "$NAKAMA_CONSOLE_USERNAME" \
+    --console.password "$NAKAMA_CONSOLE_PASSWORD"
