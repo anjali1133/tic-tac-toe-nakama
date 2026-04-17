@@ -35,19 +35,20 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     // Initialize leaderboards
     initializeLeaderboards(ctx, logger, nk);
 
-    initializer.registerMatch(MATCH_LABEL, {
-        "matchInit": matchInit,
-        "matchJoinAttempt": matchJoinAttempt,
-        "matchJoin": matchJoin,
-        "matchLeave": matchLeave,
-        "matchLoop": matchLoop,
-        "matchSignal": matchSignal,
-        "matchTerminate": matchTerminate,
+    // Nakama matches registerMatch on the AST: literal module id + shorthand handler properties.
+    initializer.registerMatch("tic-tac-toe", {
+        matchInit,
+        matchJoinAttempt,
+        matchJoin,
+        matchLeave,
+        matchLoop,
+        matchSignal,
+        matchTerminate,
     });
 
-    // Register health check endpoint for Railway
+    // Railway probes /healthz; keep a separate RPC symbol from /health for Nakama's AST pass.
     initializer.registerRpc("health", healthCheck);
-    initializer.registerRpc("healthz", healthCheck);
+    initializer.registerRpc("healthz", healthzCheck);
     
     // Register RPC for matchmaking
     initializer.registerRpc("find_match", findMatch);
@@ -64,6 +65,10 @@ function healthCheck(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrun
         message: "Tic-Tac-Toe server is running",
         timestamp: Date.now()
     });
+}
+
+function healthzCheck(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
+    return healthCheck(ctx, logger, nk, payload);
 }
 
 
