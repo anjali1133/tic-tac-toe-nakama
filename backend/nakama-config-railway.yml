@@ -11,17 +11,13 @@ metrics:
   prometheus_port: 9090
 
 session:
-  # Set NAKAMA_SESSION_ENCRYPTION_KEY in Railway to a securely generated value,
-  # e.g.: openssl rand -hex 32
-  encryption_key: "${NAKAMA_SESSION_ENCRYPTION_KEY}"
+  # encryption_key, refresh_encryption_key, and token_expiry_sec are injected
+  # via CLI flags in start-railway.sh from NAKAMA_* environment variables.
   token_expiry_sec: 7200
-  # Set NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY in Railway to a securely generated value
-  refresh_encryption_key: "${NAKAMA_SESSION_REFRESH_ENCRYPTION_KEY}"
   refresh_token_expiry_sec: 3600
 
 socket:
-  # Set NAKAMA_SERVER_KEY in Railway to a securely generated value
-  server_key: "${NAKAMA_SERVER_KEY}"
+  # server_key is injected via CLI flags in start-railway.sh.
   port: 7350
   address: "0.0.0.0"
   protocol: "tcp"
@@ -35,15 +31,11 @@ socket:
   ping_backoff_threshold: 20
 
 console:
-  # Set NAKAMA_CONSOLE_USERNAME / NAKAMA_CONSOLE_PASSWORD in Railway.
-  # Default Nakama console credentials are admin/password — always override these.
-  username: "${NAKAMA_CONSOLE_USERNAME}"
-  password: "${NAKAMA_CONSOLE_PASSWORD}"
+  # username and password are injected via CLI flags in start-railway.sh.
 
-# Database configuration is provided via --database.address in start-railway.sh
+# Database connection is provided via --database.address in start-railway.sh
 # so that POSTGRES_PASSWORD is read from the Railway environment at runtime.
 
 runtime:
   path: "/nakama/build"
-  # Set NAKAMA_RUNTIME_HTTP_KEY in Railway to a securely generated value
-  http_key: "${NAKAMA_RUNTIME_HTTP_KEY}"
+  # http_key is injected via CLI flags in start-railway.sh.
