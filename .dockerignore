@@ -1,0 +1,51 @@
+# Dependencies
+node_modules
+**/node_modules
+npm-debug.log*
+
+# Build outputs
+**/build
+**/dist
+
+# Environment files
+.env
+.env.local
+.env.*.local
+**/.env
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# Frontend specific (not needed for backend build)
+frontend/
+
+# Logs
+logs
+*.log
+
+# Railway
+.railway
+**/.railway
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.tmp
+.cache

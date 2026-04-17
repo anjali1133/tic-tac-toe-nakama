@@ -13,19 +13,19 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /nakama
 
 # Copy package files and install dependencies
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm install
 RUN npm install -g typescript
 
 # Copy source code
-COPY src/ ./src/
-COPY tsconfig.json ./
+COPY backend/src/ ./src/
+COPY backend/tsconfig.json ./
 
 # Build TypeScript
 RUN npm run build
 
 # Copy Nakama configuration
-COPY nakama-config.yml /nakama/data/
+COPY backend/nakama-config.yml /nakama/data/
 
 # Switch back to nakama user
 USER nakama
