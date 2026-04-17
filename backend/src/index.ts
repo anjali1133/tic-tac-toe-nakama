@@ -212,7 +212,7 @@ function matchLoop(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunti
         if (message.opCode === 1) { // Move message
             try {
                 const moveData: MoveMessage = JSON.parse(message.data);
-                const playerId = message.sender?.userId;
+                const playerId = message.sender ? message.sender.userId : undefined;
                 
                 if (playerId && gameState.players[playerId]) {
                     processMove(gameState, playerId, moveData.position, dispatcher, logger);
@@ -369,12 +369,12 @@ function getLeaderboard(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nk
     try {
         const records = nk.leaderboardRecordsList(ctx, "tic_tac_toe_wins", undefined, 100, undefined, undefined);
         
-        const leaderboard = records.records?.map(record => ({
+        const leaderboard = records.records ? records.records.map(record => ({
             userId: record.ownerId,
             username: record.username,
             wins: record.score,
             rank: record.rank
-        })) || [];
+        })) : [];
 
         return JSON.stringify({ leaderboard });
     } catch (error) {
