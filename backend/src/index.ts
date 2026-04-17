@@ -36,15 +36,16 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     initializeLeaderboards(ctx, logger, nk);
 
     // Register match handler
-    initializer.registerMatch(MATCH_LABEL, {
-        matchInit,
-        matchJoinAttempt,
-        matchJoin,
-        matchLeave,
-        matchLoop,
-        matchSignal,
-        matchTerminate
-    });
+    const matchHandler = {
+        matchInit: matchInit,
+        matchJoinAttempt: matchJoinAttempt,
+        matchJoin: matchJoin,
+        matchLeave: matchLeave,
+        matchLoop: matchLoop,
+        matchSignal: matchSignal,
+        matchTerminate: matchTerminate
+    };
+    initializer.registerMatch(MATCH_LABEL, matchHandler);
 
     // Register RPC for matchmaking
     initializer.registerRpc("find_match", findMatch);
