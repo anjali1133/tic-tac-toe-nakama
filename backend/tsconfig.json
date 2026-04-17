@@ -1,17 +1,17 @@
 {
   "compilerOptions": {
     "target": "ES2018",
-    "module": "CommonJS",
+    "module": "None",
     "lib": ["ES2018"],
     "outDir": "./build",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "build"]

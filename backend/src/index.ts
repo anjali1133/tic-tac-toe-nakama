@@ -440,3 +440,4 @@ function initializeLeaderboards(ctx: nkruntime.Context, logger: nkruntime.Logger
         logger.info('Leaderboard already exists or error creating: ' + (error as Error).message);
     }
 }
+
