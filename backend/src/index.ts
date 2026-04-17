@@ -29,36 +29,6 @@ interface JoinMatchMessage {
 const MOVE_TIMEOUT = 30000; // 30 seconds
 const MATCH_LABEL = "tic-tac-toe";
 
-function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, initializer: nkruntime.Initializer) {
-    logger.info('Tic-Tac-Toe module loaded');
-
-    // Initialize leaderboards
-    initializeLeaderboards(ctx, logger, nk);
-
-    // Nakama's getMatchHookFnIdentifier assumes PropertyKeyed entries; ES shorthand becomes
-    // PropertyShort and panics on this server build. Use string-literal keys + global fn refs.
-    initializer.registerMatch("tic-tac-toe", {
-        "matchInit": matchInit,
-        "matchJoinAttempt": matchJoinAttempt,
-        "matchJoin": matchJoin,
-        "matchLeave": matchLeave,
-        "matchLoop": matchLoop,
-        "matchSignal": matchSignal,
-        "matchTerminate": matchTerminate,
-    });
-
-    // Railway probes /healthz; keep a separate RPC symbol from /health for Nakama's AST pass.
-    initializer.registerRpc("health", healthCheck);
-    initializer.registerRpc("healthz", healthzCheck);
-    
-    // Register RPC for matchmaking
-    initializer.registerRpc("find_match", findMatch);
-    initializer.registerRpc("get_leaderboard", getLeaderboard);
-    initializer.registerRpc("update_stats", updateStats);
-
-    logger.info('All handlers registered');
-}
-
 // Health check endpoint for Railway
 function healthCheck(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     return JSON.stringify({ 
@@ -359,6 +329,20 @@ function matchTerminate(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nk
     return { state: state };
 }
 
+// Match hook map must be a top-level binding passed by identifier: Nakama's AST walker
+// (getMatchHookFnIdentifier) resolves it via DeclarationList; inline object literals here
+// can make extraction fail with "Failed to eval JavaScript modules" even when InitModule
+// partially runs. Property keys must be string literals (not shorthand).
+var ticTacToeMatchHandlers: { [key: string]: unknown } = {
+    "matchInit": matchInit,
+    "matchJoinAttempt": matchJoinAttempt,
+    "matchJoin": matchJoin,
+    "matchLeave": matchLeave,
+    "matchLoop": matchLoop,
+    "matchSignal": matchSignal,
+    "matchTerminate": matchTerminate,
+};
+
 // RPC: Find or create a match
 function findMatch(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     logger.info('Finding match for user: ' + ctx.userId);
@@ -457,3 +441,18 @@ function initializeLeaderboards(ctx: nkruntime.Context, logger: nkruntime.Logger
     }
 }
 
+function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, initializer: nkruntime.Initializer) {
+    logger.info('Tic-Tac-Toe module loaded');
+
+    initializeLeaderboards(ctx, logger, nk);
+
+    initializer.registerMatch("tic-tac-toe", ticTacToeMatchHandlers);
+
+    initializer.registerRpc("health", healthCheck);
+    initializer.registerRpc("healthz", healthzCheck);
+    initializer.registerRpc("find_match", findMatch);
+    initializer.registerRpc("get_leaderboard", getLeaderboard);
+    initializer.registerRpc("update_stats", updateStats);
+
+    logger.info('All handlers registered');
+}
