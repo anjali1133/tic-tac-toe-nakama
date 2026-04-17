@@ -1,0 +1,38 @@
+name: nakama1
+data_dir: "/nakama/data"
+
+logger:
+  stdout: true
+  level: "INFO"
+  file: "/nakama/data/logfile.log"
+
+metrics:
+  reporting_freq_sec: 60
+  prometheus_port: 9090
+
+session:
+  encryption_key: "defaultencryptionkey"
+  token_expiry_sec: 7200
+  refresh_encryption_key: "defaultrefreshencryptionkey"
+  refresh_token_expiry_sec: 3600
+
+socket:
+  server_key: "defaultkey"
+  port: 7350
+  address: "0.0.0.0"
+  protocol: "tcp"
+  max_message_size_bytes: 4096
+  read_timeout_ms: 10000
+  write_timeout_ms: 5000
+  idle_timeout_ms: 60000
+  write_wait_ms: 5000
+  pong_wait_ms: 25000
+  ping_period_ms: 15000
+  ping_backoff_threshold: 20
+
+# Database configuration will be provided via command line args
+# to use Railway's environment variables
+
+runtime:
+  path: "/nakama/build"
+  http_key: "defaulthttpkey"
