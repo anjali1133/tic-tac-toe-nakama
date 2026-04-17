@@ -41,4 +41,4 @@ EXPOSE 7349 7350 7351
 #   CMD curl -f http://localhost:7349/ || exit 1
 
 # Use startup script
-CMD ["/nakama/start.sh"]
+ENTRYPOINT ["/nakama/start.sh"]
