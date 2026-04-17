@@ -1,0 +1,19 @@
+FROM heroiclabs/nakama:3.21.1
+
+# Copy configuration
+COPY --chown=nakama:nakama ./local.yml /nakama/data/
+COPY --chown=nakama:nakama ./modules /nakama/data/modules
+
+# Set environment variables
+ENV NAKAMA_DATABASE_URL=""
+ENV NAKAMA_SOCKET_SERVER_KEY="defaultkey"
+
+# Expose ports
+EXPOSE 7349 7350 7351
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD /nakama/nakama healthcheck
+
+# Start Nakama
+CMD ["/nakama/nakama", "--config", "/nakama/data/local.yml"]

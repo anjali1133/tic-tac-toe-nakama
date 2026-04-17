@@ -1,0 +1,24 @@
+{
+  "name": "tic-tac-toe-nakama-frontend",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "REACT_APP_NAKAMA_HOST": "your-nakama-server.railway.app",
+    "REACT_APP_NAKAMA_PORT": "443",
+    "REACT_APP_NAKAMA_USE_SSL": "true"
+  }
+}

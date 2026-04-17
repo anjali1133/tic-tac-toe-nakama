@@ -1,0 +1,48 @@
+# Node modules
+node_modules/
+npm-debug.log*
+
+# Build outputs
+build/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Docker volumes
+data/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Backend compiled files
+backend/modules/
+
+# Frontend build
+frontend/build/
+
+# Dependencies
+frontend/node_modules/
+backend/node_modules/
+
+# Coverage reports
+coverage/
+
+# Temporary files
+tmp/
+temp/

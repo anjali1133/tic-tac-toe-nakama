@@ -1,0 +1,26 @@
+{
+  "name": "tic-tac-toe-nakama",
+  "version": "1.0.0",
+  "description": "Multiplayer Tic-Tac-Toe game built with Nakama and React",
+  "scripts": {
+    "install-all": "cd backend && npm install && cd ../frontend && npm install",
+    "build-backend": "cd backend && npm run build",
+    "build-frontend": "cd frontend && npm run build", 
+    "build-all": "npm run build-backend && npm run build-frontend",
+    "start-local": "docker-compose up -d",
+    "stop-local": "docker-compose down",
+    "dev-frontend": "cd frontend && npm start",
+    "deploy": "./deploy.sh",
+    "test-local": "npm run build-all && npm run start-local"
+  },
+  "keywords": ["multiplayer", "tic-tac-toe", "nakama", "react", "websocket", "game"],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/tic-tac-toe-nakama.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
