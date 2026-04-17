@@ -84,7 +84,7 @@ echo "HTTP API will run on port: $RAILWAY_PORT"
 # Start Nakama — security-sensitive values are passed as CLI flags so they are
 # read from the Railway environment at runtime and never baked into the image.
 exec /nakama/nakama \
-    --config /nakama/data/nakama-config.yml \
+    --config /nakama/data/nakama-config-railway.yml \
     --name nakama1 \
     --database.address "$DATABASE_URL" \
     --logger.level INFO \
@@ -94,8 +94,10 @@ exec /nakama/nakama \
     --socket.server_key "$NAKAMA_SERVER_KEY" \
     --runtime.http_key "$NAKAMA_RUNTIME_HTTP_KEY" \
     --runtime.path /nakama/build \
+    --runtime.http_port "$RAILWAY_PORT" \
     --console.username "$NAKAMA_CONSOLE_USERNAME" \
     --console.password "$NAKAMA_CONSOLE_PASSWORD" \
-    --console.port "$RAILWAY_PORT" \
+    --console.port "8080" \
     --console.address "0.0.0.0" \
-    --socket.port "7350"
+    --socket.port "7350" \
+    --socket.address "0.0.0.0"

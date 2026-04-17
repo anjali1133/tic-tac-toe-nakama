@@ -47,12 +47,24 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     };
     initializer.registerMatch(MATCH_LABEL, matchHandler);
 
+    // Register health check endpoint for Railway
+    initializer.registerRpc("health", healthCheck);
+    
     // Register RPC for matchmaking
     initializer.registerRpc("find_match", findMatch);
     initializer.registerRpc("get_leaderboard", getLeaderboard);
     initializer.registerRpc("update_stats", updateStats);
 
     logger.info('All handlers registered');
+}
+
+// Health check endpoint for Railway
+function healthCheck(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
+    return JSON.stringify({ 
+        status: "ok", 
+        message: "Tic-Tac-Toe server is running",
+        timestamp: Date.now()
+    });
 }
 
 // Match initialization
