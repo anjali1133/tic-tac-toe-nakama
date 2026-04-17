@@ -10,7 +10,7 @@ echo "========================================="
 # Postgres service in your Railway project is named "Postgres" (capital P).
 POSTGRES_HOST="${POSTGRES_HOST:-Postgres.railway.internal}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
-POSTGRES_DB="${POSTGRES_DB:-nakama}"
+POSTGRES_DB="${POSTGRES_DB:-railway}"
 
 if [ -z "$POSTGRES_PASSWORD" ]; then
     echo "ERROR: POSTGRES_PASSWORD environment variable is not set!"
@@ -46,6 +46,10 @@ echo "Postgres is ready."
 
 echo "Building TypeScript runtime..."
 npm run build
+if [ $? -ne 0 ]; then
+    echo "ERROR: npm run build failed!"
+    exit 1
+fi
 if [ ! -f "/nakama/build/index.js" ]; then
     echo "ERROR: TypeScript build failed - index.js not found!"
     echo "Contents of build directory:"
@@ -63,6 +67,8 @@ fi
 echo "Database migration completed successfully."
 
 echo "Starting Nakama with configuration..."
+echo "Nakama executable: $(which nakama || echo '/nakama/nakama')"
+echo "Config file: /nakama/data/nakama-config-railway.yml"
 
 # Security keys — set these in Railway service variables.
 # Defaults are provided only so the server starts; override them in production.
