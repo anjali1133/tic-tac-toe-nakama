@@ -1,19 +1,41 @@
+# Railway-specific Dockerfile for Nakama backend
 FROM heroiclabs/nakama:3.21.1
 
-# Copy configuration
-COPY --chown=nakama:nakama ./local.yml /nakama/data/
-COPY --chown=nakama:nakama ./modules /nakama/data/modules
+# Install Node.js for TypeScript compilation
+USER root
+RUN apt-get update && apt-get install -y \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables
-ENV NAKAMA_DATABASE_URL=""
-ENV NAKAMA_SOCKET_SERVER_KEY="defaultkey"
+# Set working directory
+WORKDIR /nakama
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+RUN npm install -g typescript
+
+# Copy source code
+COPY src/ ./src/
+COPY tsconfig.json ./
+
+# Build TypeScript
+RUN npm run build
+
+# Copy Nakama configuration
+COPY nakama-config.yml /nakama/data/
+
+# Switch back to nakama user
+USER nakama
 
 # Expose ports
 EXPOSE 7349 7350 7351
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD /nakama/nakama healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:7349/v2/healthcheck || exit 1
 
-# Start Nakama
-CMD ["/nakama/nakama", "--config", "/nakama/data/local.yml"]
+# Start command with environment variables
+CMD ["sh", "-c", "nakama --name nakama1 --database.address postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?sslmode=prefer --logger.level INFO --session.token_expiry_sec 7200 --runtime.path ./build"]

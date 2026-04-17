@@ -1,151 +1,94 @@
-import React from 'react';
-import { useGameContext } from '../hooks/useGameContext';
+import { GameState, Player } from '../types/game';
 
-const GameBoard: React.FC = () => {
-  const { gameState, isPlayerTurn, makeMove } = useGameContext();
+interface GameBoardProps {
+  gameState: GameState;
+  currentPlayer: Player | null;
+  onMakeMove: (position: number) => void;
+  canMakeMove: (position: number) => boolean;
+  isMyTurn: boolean;
+}
 
-  const handleCellClick = async (position: number) => {
-    if (!gameState || !isPlayerTurn || gameState.board[position] !== null) {
-      return;
-    }
-
-    try {
-      await makeMove(position);
-    } catch (error) {
-      console.error('Failed to make move:', error);
+export const GameBoard: React.FC<GameBoardProps> = ({
+  gameState,
+  currentPlayer,
+  onMakeMove,
+  canMakeMove,
+  isMyTurn
+}) => {
+  const getGameStatusMessage = (): string => {
+    switch (gameState.gameStatus) {
+      case 'waiting':
+        return 'Waiting for another player to join...';
+      case 'playing':
+        if (isMyTurn) {
+          return "It's your turn!";
+        }
+        const currentPlayerName = Object.values(gameState.players)
+          .find(p => p.symbol === gameState.currentPlayer)?.username || 'Opponent';
+        return `Waiting for ${currentPlayerName}'s move...`;
+      case 'finished':
+        if (gameState.winner === 'draw') {
+          return "Game ended in a draw!";
+        }
+        if (currentPlayer && gameState.winner === currentPlayer.symbol) {
+          return "You won! 🎉";
+        }
+        return "You lost! Better luck next time.";
+      default:
+        return '';
     }
   };
 
-  const getCellContent = (position: number) => {
-    const value = gameState?.board[position];
-    return value || '';
+  const getGameStatusClass = (): string => {
+    return gameState.gameStatus;
   };
 
-  const getCellClassName = (position: number) => {
-    let className = 'game-cell';
-    
-    const symbol = gameState?.board[position];
-    if (symbol) {
-      className += ` ${symbol.toLowerCase()}`;
-    }
-    
-    return className;
+  const formatTime = (ms: number): string => {
+    const seconds = Math.ceil(ms / 1000);
+    return `${seconds}s`;
   };
 
-  if (!gameState) {
-    return (
-      <div className="text-center p-4">
-        <div className="text-xl text-gray">No active game</div>
-      </div>
-    );
-  }
+  const getTimerPercentage = (): number => {
+    const maxTime = 30000; // 30 seconds
+    return Math.max(0, Math.min(100, (gameState.moveTimer / maxTime) * 100));
+  };
 
   return (
-    <div style={{ textAlign: 'center' }}>
-      {/* Game Board */}
+    <div className="game-board-container">
+      <div className={`game-status ${getGameStatusClass()}`}>
+        {getGameStatusMessage()}
+      </div>
+
+      {gameState.gameStatus === 'playing' && (
+        <div className="move-timer">
+          <div>Time remaining: {formatTime(gameState.moveTimer)}</div>
+          <div className="timer-bar">
+            <div 
+              className="timer-fill"
+              style={{ width: `${getTimerPercentage()}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="game-board">
-        {Array.from({ length: 9 }, (_, index) => (
+        {gameState.board.map((cell, index) => (
           <button
             key={index}
-            className={getCellClassName(index)}
-            onClick={() => handleCellClick(index)}
-            disabled={!isPlayerTurn || gameState.gameStatus !== 'playing' || gameState.board[index] !== null}
+            className={`game-cell ${cell.toLowerCase()}`}
+            onClick={() => onMakeMove(index)}
+            disabled={!canMakeMove(index)}
           >
-            {getCellContent(index)}
+            {cell}
           </button>
         ))}
       </div>
 
-      {/* Game Status */}
-      <div className="text-center mt-4">
-        {gameState.gameStatus === 'waiting' && (
-          <div className="text-xl text-yellow font-medium">
-            Waiting for another player...
-          </div>
-        )}
-        
-        {gameState.gameStatus === 'playing' && (
-          <div>
-            <div className="text-xl font-medium">
-              {isPlayerTurn ? (
-                <span className="text-green">Your turn!</span>
-              ) : (
-                <span className="text-gray">Opponent's turn</span>
-              )}
-            </div>
-            
-            {gameState.turnTimeLimit && gameState.turnStartTime && (
-              <TurnTimer 
-                startTime={gameState.turnStartTime} 
-                timeLimit={gameState.turnTimeLimit}
-                isActive={gameState.gameStatus === 'playing'}
-              />
-            )}
-          </div>
-        )}
-        
-        {gameState.gameStatus === 'finished' && (
-          <div>
-            {gameState.winner ? (
-              <div className="text-2xl font-bold">
-                {gameState.players[gameState.winner] ? (
-                  <span className="text-green">
-                    {gameState.players[gameState.winner].name} wins!
-                  </span>
-                ) : (
-                  <span className="text-green">Game finished!</span>
-                )}
-              </div>
-            ) : gameState.isDraw ? (
-              <div className="text-2xl font-bold text-yellow">
-                It's a draw!
-              </div>
-            ) : (
-              <div className="text-2xl font-bold text-gray">
-                Game ended
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {gameState.lastMove && (
+        <div style={{ textAlign: 'center', fontSize: '14px', color: '#666' }}>
+          Last move: {gameState.lastMove.player} at position {gameState.lastMove.position + 1}
+        </div>
+      )}
     </div>
   );
 };
-
-// Turn timer component
-interface TurnTimerProps {
-  startTime: number;
-  timeLimit: number;
-  isActive: boolean;
-}
-
-const TurnTimer: React.FC<TurnTimerProps> = ({ startTime, timeLimit, isActive }) => {
-  const [timeLeft, setTimeLeft] = React.useState(timeLimit);
-
-  React.useEffect(() => {
-    if (!isActive) return;
-
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, timeLimit - elapsed);
-      setTimeLeft(remaining);
-      
-      if (remaining === 0) {
-        clearInterval(interval);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [startTime, timeLimit, isActive]);
-
-  const seconds = Math.ceil(timeLeft / 1000);
-  const isWarning = seconds <= 10;
-
-  return (
-    <div className={isWarning ? 'text-red' : 'text-gray'} style={{ fontFamily: 'monospace', fontSize: '14px' }}>
-      Time: {seconds}s
-    </div>
-  );
-};
-
-export default GameBoard;

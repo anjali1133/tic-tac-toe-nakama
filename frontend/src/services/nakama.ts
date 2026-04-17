@@ -1,169 +1,200 @@
 import { Client, Session, Socket } from '@heroiclabs/nakama-js';
-import { v4 as uuidv4 } from 'uuid';
+import { GameUpdateMessage, LeaderboardEntry, PlayerStats } from '../types/game';
 
-export class NakamaService {
+class NakamaService {
   private client: Client;
-  private socket: Socket | null = null;
   private session: Session | null = null;
-  
+  private socket: Socket | null = null;
+  private matchId: string | null = null;
+
   constructor() {
-    const host = process.env.REACT_APP_NAKAMA_HOST || 'localhost';
-    const port = process.env.REACT_APP_NAKAMA_PORT || '7350';
-    const useSSL = process.env.REACT_APP_NAKAMA_USE_SSL === 'true';
-    
-    this.client = new Client('defaultkey', host, port, useSSL);
+    const serverUrl = import.meta.env.VITE_NAKAMA_SERVER_URL || 'localhost';
+    const serverPort = import.meta.env.VITE_NAKAMA_SERVER_PORT || '7350';
+    const useSSL = import.meta.env.VITE_NAKAMA_USE_SSL === 'true';
+
+    this.client = new Client('defaultkey', serverUrl, serverPort, useSSL, 30000, true);
   }
 
-  async connect(): Promise<void> {
+  async authenticate(username: string): Promise<Session> {
     try {
-      // Create a device ID for anonymous authentication
+      // Try to authenticate with device ID
       const deviceId = this.getOrCreateDeviceId();
-      
-      // Authenticate with device ID
-      this.session = await this.client.authenticateDevice(deviceId, true);
-      
-      // Create socket connection
-      this.socket = this.client.createSocket(true, false);
-      await this.socket.connect(this.session, true);
-      
-      console.log('Connected to Nakama server');
+      this.session = await this.client.authenticateDevice(deviceId, true, username);
+      return this.session;
     } catch (error) {
-      console.error('Failed to connect to Nakama:', error);
+      console.error('Authentication failed:', error);
       throw error;
     }
   }
 
-  async disconnect(): Promise<void> {
-    if (this.socket) {
-      this.socket.disconnect(true);
-      this.socket = null;
+  private getOrCreateDeviceId(): string {
+    let deviceId = localStorage.getItem('nakama_device_id');
+    if (!deviceId) {
+      deviceId = this.generateUUID();
+      localStorage.setItem('nakama_device_id', deviceId);
     }
-    this.session = null;
+    return deviceId;
   }
 
-  async createGame(): Promise<string> {
-    if (!this.session) {
-      throw new Error('Not connected to server');
-    }
-
-    const response = await this.client.rpc(this.session, 'create_game', {});
-    const result = JSON.parse((response.payload as any));
-    return result.matchId;
+  private generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   }
 
-  async joinMatchmaking(): Promise<string> {
+  async connectSocket(): Promise<Socket> {
     if (!this.session) {
-      throw new Error('Not connected to server');
+      throw new Error('Must authenticate before connecting socket');
     }
 
-    const response = await this.client.rpc(this.session, 'join_matchmaking', {});
-    const result = JSON.parse((response.payload as any));
-    return result.ticket;
+    this.socket = this.client.createSocket(false, false);
+    await this.socket.connect(this.session, true);
+    return this.socket;
+  }
+
+  async findMatch(): Promise<string> {
+    if (!this.client || !this.session) {
+      throw new Error('Must authenticate before finding match');
+    }
+
+    try {
+      const response = await this.client.rpc(this.session, 'find_match', {});
+      const data = JSON.parse(response.payload || '{}');
+      this.matchId = data.matchId;
+      return this.matchId;
+    } catch (error) {
+      console.error('Error finding match:', error);
+      throw error;
+    }
   }
 
   async joinMatch(matchId: string): Promise<void> {
     if (!this.socket) {
-      throw new Error('Socket not connected');
+      throw new Error('Socket must be connected before joining match');
     }
 
+    this.matchId = matchId;
     await this.socket.joinMatch(matchId);
   }
 
-  async leaveMatch(matchId: string): Promise<void> {
-    if (!this.socket) {
-      throw new Error('Socket not connected');
+  async makeMove(position: number): Promise<void> {
+    if (!this.socket || !this.matchId) {
+      throw new Error('Must be in a match to make a move');
     }
 
-    await this.socket.leaveMatch(matchId);
+    const moveData = { position };
+    await this.socket.sendMatchState(this.matchId, 1, JSON.stringify(moveData));
   }
 
-  async sendMove(matchId: string, position: number): Promise<void> {
-    if (!this.socket || !this.session) {
-      throw new Error('Not connected to server');
-    }
-
-    const moveData = {
-      position: position,
-      playerId: this.session.user_id
-    };
-
-    await this.socket.sendMatchState(matchId, 1, JSON.stringify(moveData));
-  }
-
-  onMatchData(callback: (matchId: string, data: any) => void): void {
+  onMatchData(callback: (data: GameUpdateMessage) => void): void {
     if (!this.socket) {
-      throw new Error('Socket not connected');
+      throw new Error('Socket must be connected');
     }
 
-    this.socket.onmatchdata = (result) => {
-      const data = JSON.parse(new TextDecoder().decode(result.data));
-      callback(result.match_id, data);
+    this.socket.onmatchdata = (matchData) => {
+      try {
+        const message = JSON.parse(matchData.data);
+        callback(message);
+      } catch (error) {
+        console.error('Error parsing match data:', error);
+      }
     };
   }
 
-  onMatchPresence(callback: (matchId: string, joins: any[], leaves: any[]) => void): void {
+  onMatchPresence(callback: (presences: any) => void): void {
     if (!this.socket) {
-      throw new Error('Socket not connected');
+      throw new Error('Socket must be connected');
     }
 
-    this.socket.onmatchpresence = (result) => {
-      callback(result.match_id, result.joins, result.leaves);
+    this.socket.onmatchpresence = (presences) => {
+      callback(presences);
     };
   }
 
-  onMatchmakerMatched(callback: (matched: any) => void): void {
-    if (!this.socket) {
-      throw new Error('Socket not connected');
+  async getPlayerStats(): Promise<PlayerStats> {
+    if (!this.client || !this.session) {
+      throw new Error('Must authenticate to get stats');
     }
 
-    this.socket.onmatchmakermatched = callback;
+    try {
+      // Get stats from storage
+      const result = await this.client.readStorageObjects(this.session, {
+        object_ids: [{
+          collection: 'player_stats',
+          key: 'games',
+          user_id: this.session.user_id
+        }]
+      });
+
+      if (result.objects && result.objects.length > 0) {
+        return JSON.parse(result.objects[0].value);
+      }
+
+      return { played: 0, wins: 0, losses: 0, draws: 0 };
+    } catch (error) {
+      console.error('Error getting player stats:', error);
+      return { played: 0, wins: 0, losses: 0, draws: 0 };
+    }
   }
 
-  onDisconnect(callback: () => void): void {
-    if (!this.socket) {
-      throw new Error('Socket not connected');
+  async getLeaderboard(): Promise<LeaderboardEntry[]> {
+    if (!this.client || !this.session) {
+      throw new Error('Must authenticate to get leaderboard');
     }
 
-    this.socket.ondisconnect = callback;
+    try {
+      const response = await this.client.rpc(this.session, 'get_leaderboard', {});
+      const data = JSON.parse(response.payload || '{}');
+      return data.leaderboard || [];
+    } catch (error) {
+      console.error('Error getting leaderboard:', error);
+      return [];
+    }
   }
 
-  onError(callback: (error: any) => void): void {
-    if (!this.socket) {
-      throw new Error('Socket not connected');
+  async updateStats(result: 'win' | 'loss' | 'draw'): Promise<void> {
+    if (!this.client || !this.session) {
+      throw new Error('Must authenticate to update stats');
     }
 
-    this.socket.onerror = callback;
+    try {
+      await this.client.rpc(this.session, 'update_stats', { result });
+    } catch (error) {
+      console.error('Error updating stats:', error);
+    }
   }
 
-  getCurrentUser() {
+  leaveMatch(): void {
+    if (this.socket && this.matchId) {
+      this.socket.leaveMatch(this.matchId);
+      this.matchId = null;
+    }
+  }
+
+  disconnect(): void {
+    if (this.socket) {
+      this.socket.disconnect(false);
+      this.socket = null;
+    }
+    this.matchId = null;
+  }
+
+  get currentUserId(): string | null {
     return this.session?.user_id || null;
   }
 
-  getCurrentUsername() {
-    return this.session?.username || 'Anonymous';
+  get username(): string | null {
+    return this.session?.username || null;
   }
 
-  private getOrCreateDeviceId(): string {
-    let deviceId = localStorage.getItem('nakama_device_id');
-    
-    if (!deviceId) {
-      deviceId = uuidv4();
-      localStorage.setItem('nakama_device_id', deviceId);
-    }
-    
-    return deviceId;
+  get isConnected(): boolean {
+    return this.socket !== null;
   }
 
-  isConnected(): boolean {
-    return !!this.socket && !!this.session;
-  }
-
-  getSocket(): Socket | null {
-    return this.socket;
-  }
-
-  getSession(): Session | null {
-    return this.session;
+  get currentMatchId(): string | null {
+    return this.matchId;
   }
 }
 

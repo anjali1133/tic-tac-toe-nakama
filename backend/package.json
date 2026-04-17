@@ -1,18 +1,17 @@
 {
-  "name": "tic-tac-toe-nakama-server",
+  "name": "tic-tac-toe-backend",
   "version": "1.0.0",
-  "description": "Nakama server runtime for Tic-Tac-Toe game",
-  "main": "index.js",
+  "description": "Nakama backend for multiplayer Tic-Tac-Toe",
+  "main": "start.js",
   "scripts": {
     "build": "npx tsc",
-    "dev": "npx tsc --watch"
+    "clean": "rm -rf build/",
+    "dev": "npx tsc && nakama --name nakama1 --database.address postgres:localdb@postgres:5432/nakama --logger.level DEBUG --session.token_expiry_sec 7200 --runtime.path ./build",
+    "start": "node start.js"
   },
   "devDependencies": {
-    "@types/node": "^20.19.39",
-    "typescript": "^5.9.3"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "dependencies": {}
 }

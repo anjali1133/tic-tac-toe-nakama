@@ -1,42 +1,43 @@
+export interface Player {
+  userId: string;
+  username: string;
+  symbol: 'X' | 'O';
+  connected: boolean;
+}
+
 export interface GameState {
-  board: (string | null)[];
-  currentPlayer: string;
-  players: { [userId: string]: Player };
+  board: string[];
+  currentPlayer: 'X' | 'O';
   gameStatus: 'waiting' | 'playing' | 'finished';
   winner: string | null;
-  isDraw: boolean;
-  turnTimeLimit?: number;
-  turnStartTime?: number;
+  players: { [key: string]: Player };
+  moveTimer: number;
+  lastMove?: {
+    position: number;
+    player: string;
+  };
+  reason?: string;
 }
 
-export interface Player {
-  symbol: 'X' | 'O';
-  name: string;
+export interface GameUpdateMessage {
+  type: 'game_update';
+  data: GameState;
 }
 
-export interface GameMove {
+export interface MoveMessage {
   position: number;
-  playerId: string;
 }
 
-export interface GameMessage {
-  type: 'gameState' | 'move' | 'gameEnd';
-  state?: GameState;
-  position?: number;
-  symbol?: string;
-  nextPlayer?: string;
-  reason?: 'winner' | 'draw' | 'timeout';
-  winner?: string;
+export interface PlayerStats {
+  played: number;
+  wins: number;
+  losses: number;
+  draws: number;
 }
 
-export interface ConnectionState {
-  connected: boolean;
-  connecting: boolean;
-  error: string | null;
-}
-
-export interface MatchInfo {
-  matchId: string;
-  players: Player[];
-  spectators: number;
+export interface LeaderboardEntry {
+  userId: string;
+  username: string;
+  wins: number;
+  rank: number;
 }

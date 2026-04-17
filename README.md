@@ -1,309 +1,300 @@
-# Multiplayer Tic-Tac-Toe Game with Nakama
+# Multiplayer Tic-Tac-Toe with Nakama
 
-A production-ready, multiplayer Tic-Tac-Toe game with server-authoritative architecture using Nakama as the backend infrastructure and React as the frontend.
+A production-ready, real-time multiplayer Tic-Tac-Toe game built with **Nakama** backend and **React** frontend. Features server-authoritative gameplay, matchmaking, leaderboards, and deployment-ready configuration.
 
-## 🎮 Live Demo
+## 🚀 Features
 
-**Game URL:** Deploy following the guide below to get your live URL!
+### Core Gameplay
+- **Real-time multiplayer** for 2 players
+- **Server-authoritative** game logic (anti-cheat)
+- **WebSocket** real-time communication  
+- **Automatic matchmaking** system
+- **Move timer** (30 seconds per turn)
+- **Reconnection handling**
 
-**Features:**
-- Real-time multiplayer gameplay
-- Server-authoritative game logic
-- Automatic matchmaking
-- Responsive mobile-friendly UI
-- Game room management
-- Player statistics tracking
+### Advanced Features
+- **Player statistics** tracking
+- **Global leaderboard**
+- **Multiple concurrent matches**
+- **Responsive mobile-friendly UI**
+- **Production-ready deployment**
 
 ## 🏗️ Architecture
 
-### Frontend (React)
-- **Framework:** React with TypeScript
-- **Styling:** Tailwind CSS
-- **State Management:** React Context + useReducer
-- **WebSocket Client:** Nakama JavaScript SDK
-- **Deployment:** Vercel
-
 ### Backend (Nakama)
-- **Server:** Nakama 3.x
-- **Language:** TypeScript (for server runtime)
-- **Database:** Built-in Nakama database
-- **Deployment:** Railway (free tier)
-
-## 🚀 Quick Start
-
-### Option 1: One-Command Setup (Fastest)
-```bash
-# Set up everything automatically
-./quick-start.sh
-
-# Then start frontend in a new terminal:
-cd frontend && npm start
-
-# Open http://localhost:3000 to play!
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  React Client   │◄──►│   Nakama Server  │◄──►│   PostgreSQL    │
+│   (Frontend)    │    │   (TypeScript)   │    │   (Database)    │ 
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+        │                        │                        │
+    WebSocket                Game Logic              Player Data
+  Authentication           Match Management          Statistics
+   UI Updates              Server Authority          Leaderboards
 ```
 
-### Option 2: Interactive Deployment Script
-```bash
-# Use the deployment helper for step-by-step setup
-./deploy.sh
+### How Multiplayer Works
 
-# Follow the interactive menu to:
-# 1. Check requirements
-# 2. Build both frontend and backend
-# 3. Test locally
-# 4. Deploy to production
-```
+1. **Authentication**: Players authenticate with username (device ID)
+2. **Matchmaking**: Server finds/creates match rooms for 2 players
+3. **Game State**: All game state managed server-side (board, turns, validation)
+4. **Moves**: Client sends move requests, server validates & broadcasts updates
+5. **Real-time**: WebSocket ensures instant updates to both players
+6. **Anti-cheat**: Server validates every move, preventing invalid actions
 
-### Option 2: Manual Setup
+## 🛠️ Tech Stack
 
-#### Prerequisites
-- Node.js 18+
-- Docker and Docker Compose
-- Git
+### Backend
+- **Nakama Server** - Game backend framework
+- **TypeScript** - Runtime language
+- **PostgreSQL** - Database for persistence
+- **Docker** - Containerization
 
-#### 1. Clone Repository
+### Frontend  
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool
+- **Nakama JS Client** - WebSocket connection
+- **CSS3** - Responsive styling
+
+### Deployment
+- **Railway** - Backend hosting
+- **Vercel** - Frontend hosting  
+- **Docker Compose** - Local development
+
+## 🚦 Quick Start
+
+### Prerequisites
+- **Node.js 18+**
+- **Docker & Docker Compose**
+- **Git**
+
+### Local Development
+
+1. **Clone the repository**
 ```bash
 git clone <repository-url>
 cd tic-tac-toe-nakama
 ```
 
-#### 2. Build Backend
+2. **Start the backend services**
 ```bash
+docker-compose up -d postgres
 cd backend
 npm install
 npm run build
-cd ..
+npm run dev
 ```
 
-#### 3. Build Frontend
+3. **Start the frontend**
 ```bash
 cd frontend
 npm install
-npm run build
-cd ..
+npm run dev
 ```
 
-#### 4. Start Nakama Server (Local Development)
+4. **Open two browser windows**
+- Visit `http://localhost:3000`
+- Enter different usernames in each window
+- Click "Find Match" to connect players
+
+### Docker Development (Recommended)
+
+1. **Run everything with Docker**
 ```bash
-# Start Nakama with Docker Compose
-docker-compose up -d
-
-# The server will be available at:
-# - HTTP: http://localhost:7350
-# - Console: http://localhost:7351 (admin:password)
+docker-compose up --build
 ```
 
-#### 5. Start Frontend (Local Development)
+2. **Access the application**
+- Frontend: `http://localhost:3000`
+- Nakama Console: `http://localhost:7351` (admin/password)
+- API: `http://localhost:7349`
+
+## 🌐 Production Deployment
+
+### Backend (Railway)
+
+1. **Install Railway CLI**
 ```bash
-cd frontend
-npm start
-# Frontend will be available at http://localhost:3000
+npm install -g @railway/cli
 ```
+
+2. **Deploy backend**
+```bash
+./deploy-railway.sh
+```
+
+3. **Configure Railway**
+- Add PostgreSQL service in Railway dashboard
+- Set environment variables:
+  - `POSTGRES_HOST`
+  - `POSTGRES_DB` 
+  - `POSTGRES_USER`
+  - `POSTGRES_PASSWORD`
+
+### Frontend (Vercel)
+
+1. **Install Vercel CLI**
+```bash  
+npm install -g vercel
+```
+
+2. **Deploy frontend**
+```bash
+./deploy-vercel.sh
+```
+
+3. **Configure Vercel**
+Set environment variables in Vercel dashboard:
+- `VITE_NAKAMA_SERVER_URL` - Your Railway domain
+- `VITE_NAKAMA_SERVER_PORT` - `443`
+- `VITE_NAKAMA_USE_SSL` - `true`
+
+## 🧪 Testing Multiplayer Locally
+
+### Method 1: Two Browser Windows
+1. Open `http://localhost:3000` in two windows
+2. Use different usernames (e.g., "Player1", "Player2")  
+3. Click "Find Match" in both windows
+4. Players will be automatically matched
+
+### Method 2: Incognito + Regular
+1. Regular window: `http://localhost:3000` 
+2. Incognito window: `http://localhost:3000`
+3. Use different usernames
+4. Both find matches to connect
+
+### Method 3: Different Devices
+1. Find your local IP: `ipconfig getifaddr en0` (Mac) or `ipconfig` (Windows)
+2. Access `http://[YOUR_IP]:3000` from phones/tablets
+3. Use different usernames on each device
 
 ## 📁 Project Structure
 
 ```
 tic-tac-toe-nakama/
-├── frontend/                 # React frontend application
+├── backend/                    # Nakama server
 │   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── hooks/          # Custom hooks
-│   │   ├── services/       # Nakama integration
-│   │   ├── types/          # TypeScript types
-│   │   └── utils/          # Utility functions
-│   └── package.json
-├── backend/                 # Nakama server configuration
-│   ├── src/                # TypeScript server runtime
-│   └── local.yml           # Nakama configuration
-├── docker/                 # Docker configurations
-│   └── docker-compose.yml  # Local development setup
-└── README.md
+│   │   └── index.ts           # Game logic & match handlers
+│   ├── Dockerfile             # Backend container  
+│   ├── package.json           # Dependencies
+│   └── nakama-config.yml      # Nakama configuration
+│
+├── frontend/                  # React application
+│   ├── src/
+│   │   ├── components/        # UI components
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── services/          # Nakama client service
+│   │   ├── types/             # TypeScript interfaces  
+│   │   └── styles/            # CSS styles
+│   ├── Dockerfile             # Frontend container
+│   └── package.json           # Dependencies
+│
+├── docker-compose.yml         # Local development
+├── deploy-railway.sh          # Backend deployment
+└── deploy-vercel.sh           # Frontend deployment
 ```
 
-## 🎯 Game Features
+## 🎮 Game Rules
 
-### Core Features
-- ✅ Server-authoritative game logic
-- ✅ Real-time multiplayer gameplay
-- ✅ Automatic matchmaking
-- ✅ Game room creation and joining
-- ✅ Player connection handling
-- ✅ Move validation and cheating prevention
+### Objective
+Get 3 of your symbols (X or O) in a row - horizontally, vertically, or diagonally.
 
-### Optional Features (Implemented)
-- ✅ Concurrent game support
-- ✅ Basic player statistics
-- ✅ Game room isolation
-- 🚧 Leaderboard system (planned)
-- 🚧 Timer-based game mode (planned)
+### Gameplay
+1. **Join Match**: Automatic matchmaking pairs you with another player
+2. **Take Turns**: X always goes first, then alternates  
+3. **Make Moves**: Click empty squares to place your symbol
+4. **Time Limit**: 30 seconds per move (timeout = automatic loss)
+5. **Win Conditions**: 
+   - 3 in a row = Win
+   - Board full = Draw
+   - Opponent disconnects = Win
+   - Timeout = Loss
 
-## 🔧 Development
+### Scoring
+- **Win**: +1 to wins counter & leaderboard
+- **Loss**: +1 to losses counter  
+- **Draw**: +1 to draws counter
+- **Stats**: Tracked persistently per player
 
-### Running Tests
+## 🔧 Configuration
+
+### Environment Variables
+
+#### Backend (.env)
 ```bash
-# Frontend tests
-cd frontend
-npm test
-
-# Backend tests (if implemented)
-cd backend
-npm test
+DATABASE_URL=postgres://user:pass@host:5432/nakama
+NAKAMA_HTTP_KEY=your-http-key
+NAKAMA_SERVER_KEY=your-server-key
 ```
 
-### Building for Production
+#### Frontend (.env)
 ```bash
-# Build frontend
-cd frontend
-npm run build
-
-# Backend is deployed as-is with Nakama
+VITE_NAKAMA_SERVER_URL=localhost           # Dev: localhost, Prod: your-domain
+VITE_NAKAMA_SERVER_PORT=7350              # Dev: 7350, Prod: 443  
+VITE_NAKAMA_USE_SSL=false                 # Dev: false, Prod: true
 ```
 
-## 🌐 Deployment Guide
+### Nakama Configuration
+Key settings in `backend/nakama-config.yml`:
+- **Database**: PostgreSQL connection
+- **Socket**: WebSocket port (7350)  
+- **Session**: Token expiry (2 hours)
+- **Runtime**: TypeScript module path
 
-**📖 For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)**
+## 🚨 Troubleshooting
 
-### Quick Deploy Summary
+### Backend Issues
+**Nakama won't start**
+- Check PostgreSQL is running: `docker ps`
+- Verify database connection in logs  
+- Ensure TypeScript compiled: `npm run build`
 
-#### 1. **Deploy Backend to Railway** (Free)
-- Create account at [railway.app](https://railway.app)
-- Deploy from GitHub repository
-- Add PostgreSQL database
-- Set environment variables
+**Match not found**  
+- Check Nakama console logs
+- Verify matchmaking RPC is registered
+- Test with curl: `curl http://localhost:7349/v2/rpc/find_match`
 
-#### 2. **Deploy Frontend to Vercel** (Free)
-- Create account at [vercel.com](https://vercel.com)  
-- Connect GitHub repository
-- Set environment variables pointing to Railway backend
-- Deploy automatically
-
-#### 3. **Use Deployment Script**
-```bash
-./deploy.sh
-# Choose option 6 to setup deployment configs
-# Choose option 7 to deploy frontend to Vercel
-```
-
-### Free Hosting Platforms
-
-#### Backend Options:
-- **Railway** ⭐ (Recommended) - $5 monthly credit
-- **Fly.io** - Great Docker support
-- **Render.com** - Simple deployment
-- **DigitalOcean App Platform** - Managed containers
-
-#### Frontend Options:  
-- **Vercel** ⭐ (Recommended) - Excellent React support
-- **Netlify** - Great static hosting
-- **GitHub Pages** - Free for public repos
-- **Firebase Hosting** - Google's platform
-
-## 🔑 Environment Configuration
-
-### Local Development (.env files)
-
-**Frontend (.env):**
-```env
-REACT_APP_NAKAMA_HOST=localhost
-REACT_APP_NAKAMA_PORT=7350
-REACT_APP_NAKAMA_USE_SSL=false
-```
-
-**Backend (docker-compose.yml):**
-```yaml
-environment:
-  NAKAMA_DATABASE_URL: postgres://...
-  NAKAMA_SOCKET_SERVER_KEY: defaultkey
-```
-
-## 🎮 How to Play
-
-1. **Access the Game:** Visit the deployed URL
-2. **Create/Join Game:** 
-   - Click "Create Game" to start a new room
-   - Or click "Join Game" to enter matchmaking
-3. **Gameplay:** 
-   - Take turns clicking on the grid
-   - First player to get 3 in a row wins
-   - Game state updates in real-time
-
-## 🧪 Testing Multiplayer Functionality
-
-1. **Open Multiple Browser Windows/Tabs:**
-   - Navigate to the game URL in each
-   - Use different browser profiles or incognito mode
-
-2. **Test Matchmaking:**
-   - Click "Join Game" in both windows
-   - Verify players are matched automatically
-
-3. **Test Gameplay:**
-   - Make moves in alternating windows
-   - Verify real-time updates
-   - Test win/draw conditions
-
-4. **Test Reconnection:**
-   - Refresh one browser window during gameplay
-   - Verify game state is restored
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Frontend won't connect to Nakama:**
+### Frontend Issues  
+**Can't connect to Nakama**
+- Verify Nakama is running on correct port
 - Check CORS settings in Nakama config
-- Verify environment variables
-- Check browser console for errors
+- Confirm environment variables are set
 
-**Docker issues:**
-- Ensure Docker is running
-- Check port conflicts (7350, 7351)
-- Restart containers: `docker-compose restart`
+**WebSocket connection fails**
+- Check firewall blocking port 7350
+- Verify SSL/TLS settings match (dev vs prod)  
+- Test connection in browser dev tools
 
-**Deployment issues:**
-- Verify environment variables in deployment platform
-- Check build logs for errors
-- Ensure all dependencies are listed in package.json
+### Deployment Issues
+**Railway deployment fails**
+- Ensure Dockerfile builds locally first
+- Check Railway logs for specific errors
+- Verify PostgreSQL service is added
 
-## 📊 Performance Considerations
-
-- **Concurrent Games:** Server supports multiple simultaneous games
-- **Scalability:** Nakama is designed for high concurrency
-- **Network:** WebSocket connections for real-time updates
-- **Mobile:** Responsive design optimized for mobile devices
-
-## 🔐 Security Features
-
-- Server-side move validation
-- Protection against client-side manipulation
-- Secure WebSocket connections (WSS in production)
-- Rate limiting (configured in Nakama)
-
-## 📈 Future Enhancements
-
-- [ ] Tournament system
-- [ ] Spectator mode
-- [ ] Chat functionality
-- [ ] Player profiles and avatars
-- [ ] Advanced statistics and analytics
-- [ ] AI opponent option
-- [ ] Custom game rooms with passwords
+**Vercel deployment fails**  
+- Check build command in vercel.json
+- Verify all environment variables are set
+- Test build locally: `npm run build`
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+2. Create feature branch: `git checkout -b feature-name`  
+3. Commit changes: `git commit -am 'Add feature'`
+4. Push to branch: `git push origin feature-name`
+5. Submit Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+MIT License - feel free to use this code for your own projects!
 
-## 📞 Support
+## 🙋‍♂️ Support
 
-For issues and questions:
-- Create an issue in the GitHub repository
-- Check the troubleshooting section above
-- Review Nakama documentation: [heroiclabs.com/docs](https://heroiclabs.com/docs)
+- **Issues**: Open GitHub issue for bugs/features
+- **Documentation**: Check Nakama docs at https://heroiclabs.com/docs/
+- **Community**: Join Nakama Discord for help
+
+---
+
+**Happy Gaming! 🎮**

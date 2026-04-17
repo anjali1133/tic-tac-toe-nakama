@@ -1,26 +1,43 @@
 {
-  "name": "tic-tac-toe-nakama",
+  "name": "multiplayer-tic-tac-toe",
   "version": "1.0.0",
-  "description": "Multiplayer Tic-Tac-Toe game built with Nakama and React",
+  "description": "Production-ready multiplayer Tic-Tac-Toe game with Nakama backend and React frontend",
   "scripts": {
-    "install-all": "cd backend && npm install && cd ../frontend && npm install",
-    "build-backend": "cd backend && npm run build",
-    "build-frontend": "cd frontend && npm run build", 
-    "build-all": "npm run build-backend && npm run build-frontend",
-    "start-local": "docker-compose up -d",
-    "stop-local": "docker-compose down",
-    "dev-frontend": "cd frontend && npm start",
-    "deploy": "./deploy.sh",
-    "test-local": "npm run build-all && npm run start-local"
+    "setup": "./setup.sh",
+    "dev": "docker-compose up --build",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "deploy:railway": "./deploy-railway.sh",
+    "deploy:vercel": "./deploy-vercel.sh",
+    "deploy": "npm run deploy:railway && npm run deploy:vercel",
+    "clean": "docker-compose down -v && docker system prune -f",
+    "logs": "docker-compose logs -f",
+    "test:multiplayer": "echo 'Open http://localhost:3000 in two browser windows to test multiplayer'"
   },
-  "keywords": ["multiplayer", "tic-tac-toe", "nakama", "react", "websocket", "game"],
+  "keywords": [
+    "multiplayer", 
+    "tic-tac-toe",
+    "nakama",
+    "react", 
+    "websocket",
+    "real-time",
+    "game",
+    "typescript"
+  ],
   "author": "Your Name",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-username/tic-tac-toe-nakama.git"
-  },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/multiplayer-tic-tac-toe.git"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
 }
