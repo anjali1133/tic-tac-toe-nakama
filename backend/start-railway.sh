@@ -76,6 +76,11 @@ NAKAMA_CONSOLE_PASSWORD="${NAKAMA_CONSOLE_PASSWORD:-changeme-console-password}"
 echo "Console username: $NAKAMA_CONSOLE_USERNAME"
 echo "Security keys:    loaded from environment (values hidden)"
 
+# Railway assigns a PORT environment variable that we need to use for HTTP API
+RAILWAY_PORT="${PORT:-7349}"
+echo "Railway assigned port: $RAILWAY_PORT"
+echo "HTTP API will run on port: $RAILWAY_PORT"
+
 # Start Nakama — security-sensitive values are passed as CLI flags so they are
 # read from the Railway environment at runtime and never baked into the image.
 exec /nakama/nakama \
@@ -90,4 +95,7 @@ exec /nakama/nakama \
     --runtime.http_key "$NAKAMA_RUNTIME_HTTP_KEY" \
     --runtime.path /nakama/build \
     --console.username "$NAKAMA_CONSOLE_USERNAME" \
-    --console.password "$NAKAMA_CONSOLE_PASSWORD"
+    --console.password "$NAKAMA_CONSOLE_PASSWORD" \
+    --console.port "$RAILWAY_PORT" \
+    --console.address "0.0.0.0" \
+    --socket.port "7350"
