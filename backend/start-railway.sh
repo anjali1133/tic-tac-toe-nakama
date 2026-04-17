@@ -5,6 +5,10 @@ echo "========================================="
 echo "Starting Nakama Server on Railway"
 echo "========================================="
 echo "PORT (Railway public listener): ${PORT:-unset}"
+if [ -n "${RAILWAY_ENVIRONMENT:-}" ] && [ -z "${PORT:-}" ]; then
+    echo "ERROR: PORT is unset on Railway. Use an HTTP/Web service (Railway injects PORT) or set PORT manually."
+    exit 1
+fi
 
 # --- Database URL (Railway) -------------------------------------------------
 # Prefer DATABASE_PRIVATE_URL / DATABASE_URL from Railway when the Postgres
@@ -114,7 +118,7 @@ echo "Console will listen on port: $CONSOLE_PORT (gRPC internal uses $GRPC_INTER
 
 # Start Nakama — security-sensitive values are passed as CLI flags so they are
 # read from the Railway environment at runtime and never baked into the image.
-echo "Exec: nakama (API on 0.0.0.0:$RAILWAY_PORT, console on 0.0.0.0:$CONSOLE_PORT)"
+echo "Exec: nakama (HTTP API :$RAILWAY_PORT, console :$CONSOLE_PORT)"
 exec /nakama/nakama \
     --config /nakama/data/nakama-config.yml \
     --name nakama1 \
@@ -130,6 +134,4 @@ exec /nakama/nakama \
     --console.password "$NAKAMA_CONSOLE_PASSWORD" \
     --console.signing_key "$NAKAMA_CONSOLE_SIGNING_KEY" \
     --console.port "$CONSOLE_PORT" \
-    --console.address "0.0.0.0" \
-    --socket.address "0.0.0.0" \
     --socket.port "$RAILWAY_PORT"
