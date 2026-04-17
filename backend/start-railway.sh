@@ -94,10 +94,9 @@ exec /nakama/nakama \
     --socket.server_key "$NAKAMA_SERVER_KEY" \
     --runtime.http_key "$NAKAMA_RUNTIME_HTTP_KEY" \
     --runtime.path /nakama/build \
-    --runtime.http_port "$RAILWAY_PORT" \
     --console.username "$NAKAMA_CONSOLE_USERNAME" \
     --console.password "$NAKAMA_CONSOLE_PASSWORD" \
-    --console.port "8080" \
+    --console.port "$RAILWAY_PORT" \
     --console.address "0.0.0.0" \
     --socket.port "7350" \
     --socket.address "0.0.0.0"

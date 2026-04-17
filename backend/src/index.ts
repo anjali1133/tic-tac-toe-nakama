@@ -50,6 +50,9 @@ function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrunt
     // Register health check endpoint for Railway
     initializer.registerRpc("health", healthCheck);
     
+    // Register HTTP handlers for Railway health checks
+    initializer.registerRpcHttp("healthz", healthCheckHttp);
+    
     // Register RPC for matchmaking
     initializer.registerRpc("find_match", findMatch);
     initializer.registerRpc("get_leaderboard", getLeaderboard);
@@ -64,6 +67,16 @@ function healthCheck(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkrun
         status: "ok", 
         message: "Tic-Tac-Toe server is running",
         timestamp: Date.now()
+    });
+}
+
+// HTTP health check endpoint for Railway (no auth required)
+function healthCheckHttp(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string, userId: string, username: string, vars: {[key: string]: string}, expiry: number): string {
+    return JSON.stringify({ 
+        status: "ok", 
+        message: "Tic-Tac-Toe server HTTP API is running",
+        timestamp: Date.now(),
+        server: "nakama"
     });
 }
 

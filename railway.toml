@@ -4,8 +4,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "backend/Dockerfile.railway"
 
 [deploy]
-# Temporarily disable healthcheck to allow deployment
-# healthcheckPath = "/v2/healthcheck"
+healthcheckPath = "/v2/rpc/healthz"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
