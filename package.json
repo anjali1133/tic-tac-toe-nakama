@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Production-ready multiplayer Tic-Tac-Toe game with Nakama backend and React frontend",
   "scripts": {
+    "start": "cd backend && npm start",
     "setup": "./setup.sh",
     "dev": "docker-compose up --build",
     "dev:backend": "cd backend && npm run dev",

@@ -16,15 +16,14 @@ railway login
 
 # Create or link to Railway project
 echo "🔗 Linking to Railway project..."
-cd backend
 
-# Initialize Railway project if not already done
-if [ ! -f ".railway.toml" ]; then
+# Initialize Railway project from root if not already done
+if [ ! -f "railway.toml" ]; then
     echo "🆕 Creating new Railway project..."
     railway init
 fi
 
-# Deploy
+# Deploy from root directory
 echo "🚢 Deploying to Railway..."
 railway up --detach
 
